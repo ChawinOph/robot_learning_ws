@@ -12,6 +12,7 @@ np.set_printoptions(threshold=np.inf) # change the print-out option for large ar
 
 # import scikit learn modules
 from sklearn import svm 
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn import linear_model
 from sklearn.decomposition import PCA 
 
@@ -32,25 +33,33 @@ class Analysis():
 		print "Started trainings..."
 
 		# train the object classification (clf := classiflier) being grasped based on glove data (classification)
-		# 1st choic: try SVM
+		# 1st choic: SVM
 		self.glove_to_label_clf = svm.SVC(gamma='scale')
 		self.glove_to_label_clf.fit(glove_train_data, label_train_data)
 		print "Finished glove to label classification training..."
 
 		# train the object classification being grasped based on EMG data (classification)
-		# 1st choice: try SVM (score 0.4 only)
-		self.emg_to_label_clf = svm.SVC(gamma='scale')
+		# 1st choice: svm.SVC(gamma='scale', kernel='rbf', C=1.0): (got score 0.4 < 0.62)
+		# 2nd choice: svm.SVC(gamma='scale', kernel='rbf', C=10.0): (got score ~0.408 < 0.62)
+		# 3rd choice: svm.SVC(gamma='auto', kernel='rbf', C=1.0): (got score ~0.143 < 0.62)
+		# 4th choice: svm.SVC(gamma='auto', kernel='poly', C=1.0): (took too long to train and the grader exited)
+		# 5th choice: KNeighborsClassifier(): (got score ~0.56 < 0.62)
+		# 6th choice: KNeighborsClassifier(n_neighbors=10): (got score ~0.5744 < 0.62)
+		# ***7th choice: KNeighborsClassifier(n_neighbors=10, weights='distance', algorithm='ball_tree'/'kd_tree'): (got score ~0.5801 < 0.62)
+		# 8th choice: KNeighborsClassifier(n_neighbors=10, weights='distance', p=3): (got score ~0.5744 < 0.62)
+		# 9th choice: KNeighborsClassifier(n_neighbors=15, weights='distance'): (got score ~0.5744 < 0.62)
+		self.emg_to_label_clf = KNeighborsClassifier(n_neighbors=10, weights='distance')
 		self.emg_to_label_clf.fit(emg_train_data, label_train_data)
 		print "Finished EMG to label classification training..."
 
 		# train to predict glove data based on EMG (regression)
-		# 1st choice: try Ordinary Linear Regression
+		# 1st choice: Ordinary Linear Regression
 		self.emg_to_glove_reg = linear_model.LinearRegression()
 		self.emg_to_glove_reg.fit(emg_train_data, glove_train_data)
 		print "Finished EMG to glove regression training..."
 
 		# Reduce the dimentionality of the glove data without sacrificing to much info
-		# First, try the generic PCA
+		# First, Generic PCA
 		self.glove_dim_red = PCA(n_components=2)
 		self.glove_dim_red.fit(glove_train_data)
 		print "Finished glove dimensionality reduction..."
