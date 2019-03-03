@@ -10,8 +10,6 @@ rospack = rospkg.RosPack() # get an instance of RosPack with the default search 
 import numpy as np 
 np.set_printoptions(threshold=np.inf) # change the print-out option for large array size
 from sklearn.cluster import KMeans # for using K-mean clustering algorithm
-# (link: https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html)
-
 # Import messeges
 from std_msgs.msg import String
 from grasp_clustering.msg import GraspInfo 
