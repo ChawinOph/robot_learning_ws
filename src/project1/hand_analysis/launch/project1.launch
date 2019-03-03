@@ -1,0 +1,8 @@
+<launch>
+
+  <arg name="training_path" default='$(find hand_analysis)/data/object_grasping_30sec.csv'/>
+
+  <node name="analysis" pkg="hand_analysis" type="analysis.py" args="_train_filename:=$(arg training_path)" output="screen" />
+
+</launch>
+

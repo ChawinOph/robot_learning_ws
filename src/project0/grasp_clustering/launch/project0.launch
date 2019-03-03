@@ -1,0 +1,8 @@
+<launch>
+
+  <arg name="training_path" default='$(find grasp_clustering)/data/object_grasping_30sec_no_labels.csv'/>
+
+  <node name="clustering" pkg="grasp_clustering" type="cluster_grasps.py" args="_train_filename:=$(arg training_path)" output="screen" />
+
+</launch>
+
