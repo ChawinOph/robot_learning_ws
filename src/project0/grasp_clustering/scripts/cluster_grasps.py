@@ -31,7 +31,7 @@ class Cluster_grasps():
 		# print csv_train_data.shape # (2820, 23)
 
 		# get the glove joint angle training data
-		glove_train_data = csv_train_data[:, 8:23]
+		glove_train_data = csv_train_data[:, 8::]
 
 		# fitting a K-means clustering algorithm to the glove (joint angle)
 		self.kmeans = KMeans(n_clusters=10).fit(glove_train_data)
@@ -43,12 +43,8 @@ class Cluster_grasps():
 		self.labeled_grasp_info_pub = rospy.Publisher("/labeled_grasp_info", GraspInfo, queue_size=1)
 							
 	def callback(self, grasp_info):
-		# rospy.loginfo('Received a grasp info...')
-		new_glove_data_1D = np.array(grasp_info.glove)
-		# convert 1D array to 2D array for inputting the predict function
-		new_glove_data_2D = np.reshape(new_glove_data_1D, (-1, new_glove_data_1D.shape[0]))
 		# Assign a cluster label based on the .glove data, using the trained k-means
-		grasp_info.label = self.kmeans.predict(new_glove_data_2D)
+		grasp_info.label = self.kmeans.predict(np.array(grasp_info.glove).reshape(1, -1))
 		# Re-publish it on the "/labeled_grasp_info" topic
 		self.labeled_grasp_info_pub.publish(grasp_info)
 
