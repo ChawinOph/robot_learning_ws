@@ -11,14 +11,20 @@ import numpy as np
 np.set_printoptions(threshold=np.inf) # change the print-out option for large array size
 
 # import scikit learn modules
-from sklearn import svm 
+from sklearn import svm # mainly with RBF: radial basis function
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors.nearest_centroid import NearestCentroid
+from sklearn.gaussian_process.kernels import RBF
 from sklearn import linear_model
 from sklearn.decomposition import PCA 
 
 # Import messeges
 from std_msgs.msg import String
 from hand_analysis.msg import GraspInfo 
+
+
+def custom_weights(dist_array):
+	return np.array(dist_array)**-1
 
 # create the node class
 class Analysis():
@@ -34,8 +40,7 @@ class Analysis():
 
 		# train the object classification (clf := classiflier) being grasped based on glove data (classification)
 		# 1st choic: SVM
-		self.glove_to_label_clf = svm.SVC(gamma='scale')
-		self.glove_to_label_clf.fit(glove_train_data, label_train_data)
+		self.glove_to_label_clf = svm.SVC(gamma='scale').fit(glove_train_data, label_train_data)
 		print "Finished glove to label classification training..."
 
 		# train the object classification being grasped based on EMG data (classification)
@@ -48,20 +53,24 @@ class Analysis():
 		# ***7th choice: KNeighborsClassifier(n_neighbors=10, weights='distance', algorithm='ball_tree'/'kd_tree'): (got score ~0.5801 < 0.62)
 		# 8th choice: KNeighborsClassifier(n_neighbors=10, weights='distance', p=3): (got score ~0.5744 < 0.62)
 		# 9th choice: KNeighborsClassifier(n_neighbors=15, weights='distance'): (got score ~0.5744 < 0.62)
-		self.emg_to_label_clf = KNeighborsClassifier(n_neighbors=10, weights='distance')
+		# 10th choice: GaussianProcessClassifier(1.0 * RBF(1.0)): took too long
+		# 11th choice: KNeighborsClassifier(n_neighbors=100) (got 0.407 < 0.62)
+		# 12th choice: RadiusNeighborsClassifier(radius=500.0) (got 0.191)
+		# 13th choice: NearestCentroid() (got 0.442)
+		# 14th choice: KNeighborsClassifier(n_neighbors=10, weights=custom_weights) 1/dist^2 (score 0.579)
+		self.emg_to_label_clf = KNeighborsClassifier(n_neighbors=10, weights=custom_weights)
+		# self.emg_to_label_clf = svm.SVC(gamma ='scale', C=1000.0)
 		self.emg_to_label_clf.fit(emg_train_data, label_train_data)
 		print "Finished EMG to label classification training..."
 
 		# train to predict glove data based on EMG (regression)
 		# 1st choice: Ordinary Linear Regression
-		self.emg_to_glove_reg = linear_model.LinearRegression()
-		self.emg_to_glove_reg.fit(emg_train_data, glove_train_data)
+		self.emg_to_glove_reg = linear_model.LinearRegression().fit(emg_train_data, glove_train_data)
 		print "Finished EMG to glove regression training..."
 
 		# Reduce the dimentionality of the glove data without sacrificing to much info
 		# First, Generic PCA
-		self.glove_dim_red = PCA(n_components=2)
-		self.glove_dim_red.fit(glove_train_data)
+		self.glove_dim_red = PCA(n_components=2).fit(glove_train_data)
 		print "Finished glove dimensionality reduction..."
 
 		print "Finished all trainings..."
@@ -72,15 +81,15 @@ class Analysis():
 
 	def callback(self, grasp_info):
 		if np.array(grasp_info.glove).size != 0: # only glove data is given
-			print "Received testing glove data..."
+			# print "Received testing glove data..."
 			grasp_info.label = self.label_object_from_glove(grasp_info.glove)
 			grasp_info.glove_low_dim = self.dim_red(grasp_info.glove)
 		elif np.array(grasp_info.emg).size != 0: # only EMG is given
-			print "Received testing emg data..."
+			# print "Received testing emg data..."
 			grasp_info.label = self.label_object_from_emg(grasp_info.emg)
 			grasp_info.glove = self.label_glove_from_emg(grasp_info.emg)
 		elif np.array(grasp_info.glove_low_dim).size != 0: # only low-D glove data is given
-			print "Received testing glove_low_dim data..."
+			# print "Received testing glove_low_dim data..."
 			grasp_info.glove = self.inv_dim_red(grasp_info.glove_low_dim)
 			grasp_info.label = self.label_object_from_glove(grasp_info.glove)
 		self.labeled_grasp_info_pub.publish(grasp_info)
