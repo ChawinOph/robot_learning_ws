@@ -13,7 +13,8 @@ np.set_printoptions(threshold=np.inf) # change the print-out option for large ar
 # import scikit learn modules
 from sklearn import svm # mainly with RBF: radial basis function
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neighbors.nearest_centroid import NearestCentroid
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.gaussian_process.kernels import RBF
 from sklearn import linear_model
 from sklearn.decomposition import PCA 
@@ -50,7 +51,7 @@ class Analysis():
 		# 4th choice: svm.SVC(gamma='auto', kernel='poly', C=1.0): (took too long to train and the grader exited)
 		# 5th choice: KNeighborsClassifier(): (got score ~0.56 < 0.62)
 		# 6th choice: KNeighborsClassifier(n_neighbors=10): (got score ~0.5744 < 0.62)
-		# ***7th choice: KNeighborsClassifier(n_neighbors=10, weights='distance', algorithm='ball_tree'/'kd_tree'): (got score ~0.5801 < 0.62)
+		# *7th choice: KNeighborsClassifier(n_neighbors=10, weights='distance', algorithm='ball_tree'/'kd_tree'): (got score ~0.5801 < 0.62)
 		# 8th choice: KNeighborsClassifier(n_neighbors=10, weights='distance', p=3): (got score ~0.5744 < 0.62)
 		# 9th choice: KNeighborsClassifier(n_neighbors=15, weights='distance'): (got score ~0.5744 < 0.62)
 		# 10th choice: GaussianProcessClassifier(1.0 * RBF(1.0)): took too long
@@ -58,8 +59,11 @@ class Analysis():
 		# 12th choice: RadiusNeighborsClassifier(radius=500.0) (got 0.191)
 		# 13th choice: NearestCentroid() (got 0.442)
 		# 14th choice: KNeighborsClassifier(n_neighbors=10, weights=custom_weights) 1/dist^2 (score 0.579)
-		self.emg_to_label_clf = KNeighborsClassifier(n_neighbors=10, weights=custom_weights)
-		# self.emg_to_label_clf = svm.SVC(gamma ='scale', C=1000.0)
+		# 15th choice: svm.SVC(gamma='scale', kernel='sigmoid', coef0=0) (score 0.1425)
+		# **16th choice: LinearDiscriminantAnalysis() (score 0.5829)
+		# ***17th choice: QuadraticDiscriminantAnalysis() (score 0.612)
+		# ****18th choice: QuadraticDiscriminantAnalysis(reg_param=0.5) (score 0.6227)
+		self.emg_to_label_clf = QuadraticDiscriminantAnalysis(reg_param=0.5)
 		self.emg_to_label_clf.fit(emg_train_data, label_train_data)
 		print "Finished EMG to label classification training..."
 
