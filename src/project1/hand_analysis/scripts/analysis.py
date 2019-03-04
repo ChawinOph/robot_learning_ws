@@ -15,6 +15,7 @@ from sklearn import svm # mainly with RBF: radial basis function
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB
 from sklearn.gaussian_process.kernels import RBF
 from sklearn import linear_model
 from sklearn.decomposition import PCA 
@@ -63,6 +64,8 @@ class Analysis():
 		# **16th choice: LinearDiscriminantAnalysis() (score 0.5829)
 		# ***17th choice: QuadraticDiscriminantAnalysis() (score 0.612)
 		# ****18th choice: QuadraticDiscriminantAnalysis(reg_param=0.5) (score 0.6227)
+		# 19th choice: GaussianNB() (score 0.479)
+		# 20th choice: QuadraticDiscriminantAnalysis(reg_param=0.9) (score 0.6007)
 		self.emg_to_label_clf = QuadraticDiscriminantAnalysis(reg_param=0.5)
 		self.emg_to_label_clf.fit(emg_train_data, label_train_data)
 		print "Finished EMG to label classification training..."
