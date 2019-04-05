@@ -1,0 +1,6 @@
+<launch>
+
+  <node name="real_robot" pkg="robot_sim" type="real_robot.py" output="screen" />
+
+</launch>
+
