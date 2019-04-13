@@ -1,14 +1,23 @@
 #!/usr/bin/env python
 
-import numpy as np
+# ROS environment
 import time
 import rospy 
-
 from robot_sim.srv import RobotAction
 from robot_sim.srv import RobotActionRequest
 from robot_sim.srv import RobotActionResponse
-
 from robot_sim.msg import RobotState
+
+# PyTorch
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from torch.utils.data.dataset import Dataset
+from torch.utils.data import DataLoader
+
+import numpy as np
+import math
 
 class FakeRobot(object):
 	def __init__(self):
@@ -42,8 +51,6 @@ class FakeRobot(object):
 			message.robot_name=str('real_robot')
 			message.robot_state = resp_real.robot_state
 			self.pub.publish(message)
-			print "sent state to gui"
-
 
 		# should visualize the data via gui when we perturb real_robot
 
