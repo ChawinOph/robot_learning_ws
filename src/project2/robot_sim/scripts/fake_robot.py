@@ -27,8 +27,8 @@ class FakeRobot(object):
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
 		# publisher for gui
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-		self.num_tests = 5				# default: 21
-		self.perturb_steps = 200		# default: 200
+		self.num_tests = 50			# default: 21
+		self.perturb_steps = 200    # default: 200
 		print "Collecting data from real_robot..."
 		self.features = [];
 		self.labels = [];
@@ -134,7 +134,7 @@ class MyDNNTrain(object):
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
 		self.num_epochs = 100 	# default: 500
-		self.batchsize = 10 	# default: 100
+		self.batchsize = 25 	# default: 100
 		self.shuffle = True 	# default: True
 
 	def train(self, labels, features):

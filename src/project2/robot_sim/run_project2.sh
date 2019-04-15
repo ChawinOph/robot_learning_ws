@@ -12,7 +12,7 @@ sleep 1
 rosrun robot_sim fake_robot.py &
 
 #Change this value if you need more time for training
-sleep 10
+sleep 40
 
 xterm -hold -e "rosrun robot_sim executive.py" 
 
