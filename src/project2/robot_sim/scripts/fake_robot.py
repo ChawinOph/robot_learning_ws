@@ -25,53 +25,62 @@ class FakeRobot(object):
 		rospy.wait_for_service('real_robot')
 		# create the service caller from real_robot
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
-
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-
 		# obtain training data set from real_robot
-		print "Obtaining training data from real robot"
+		print "Obtaining training data from real robot..."
+		self.num_tests = 20 
+		self.perturb_steps = 200
+		features = []
+		for i in range(0, self.num_tests):
+			action = np.random.rand(1,3)
+			action[0,0] = (2 * action[0,0] - 1.0) * 1.0
+			action[0,1] = (2 * action[0,1] - 1.0) * 0.5
+			action[0,2] = (2 * action[0,2] - 1.0) * 0.25
+			self.perturb(action.reshape(3))
 
+			
+			time.sleep(1.00)
+		# self.training_data = 
+		# train data via NN using Pytorch
+		print "Training the network..."
+		self.network = MyDNN(features.shape[1])
+		self.trainer = MyDNNTrain(self.network)
+		self.trainer.train(labels, features)
+		print "Finished training fake_robot"
+		# create service from fake robot
+		self.fake_robot_service = rospy.Service('fake_robot', RobotAction, self.fake_robot_action)
+
+	def perturb(self, action):
 		req_real = RobotActionRequest()
-
-		# apply a constant effort as long as the testing code (or should it be longer)
-		perturb_steps = 200
-		# apply constant torque # scale torque values like in executive.py
-		torque = np.random.rand(1,3)
-		torque[0,0] = (2 * torque[0,0] - 1.0) * 1.0
-		torque[0,1] = (2 * torque[0,1] - 1.0) * 0.5
-		torque[0,2] = (2 * torque[0,2] - 1.0) * 0.25
-		req_real.action = torque.reshape(3)
-		
-		for i in range(perturb_steps):
+		req_real.reset = True
+		# reset config
+		self.real_robot_action(req_real)
+		# apply constant action
+		for j in range(self.perturb_steps):
+			req_real = RobotActionRequest()
 			req_real.reset = False
+			print action
+			req_real.action = action
 			resp_real = self.real_robot_action(req_real)
 			print resp_real
-			# for visualizeing the perturbed real_robot
+			# visualizeing the perturbed real_robot in gui
 			message = RobotState()
 			message.robot_name=str('real_robot')
 			message.robot_state = resp_real.robot_state
 			self.pub.publish(message)
 
-		# should visualize the data via gui when we perturb real_robot
+	def viz_robot(self, robot_name, robot_state):
+		pass
 
-		# loop until the real_robot stop poviding service
-			# request joint values from given joint effort command
-			# reset config if needed?
-
-		# self.training_data = 
-
-		# train data via NN using Pytorch
-		self.network = MyDNN(2)
-		self.trainer = MyDNNTrain(self.network)
-
-		# store the trained networked and ready to provide the service
-		self.fake_robot_service = rospy.Service('fake_robot', RobotAction, self.fake_robot_action)
-
-	def fake_robot_action(self, req):
+	def fake_robot_action(self, req_fake):
 		# what to feed the trained NN besides the action? the reset?
 		# the robot might have to "remember its own post if thet reset is false"
 		# return fake_robot state from input to NN
-		pass
+		resp_fake = RobotActionResponse()
+		
+		# if the request has the reset as true, reset the current robot config to the 
+		predictions = self.network.predict(features)
+		return 
 
 class MyDNN(nn.Module):
 	def __init__(self, input_dim):
@@ -110,12 +119,12 @@ class MyDataset(Dataset):
 class MyDNNTrain(object):
 	def __init__(self, network): #Networks is of datatype MyDNN
 		self.network = network
-		self.learning_rate = .01
+		self.learning_rate = .01 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss()
-		self.num_epochs = 500
-		self.batchsize = 100
-		self.shuffle = True
+		self.num_epochs = 500 	# default: 500
+		self.batchsize = 100 	# default: 100
+		self.shuffle = True 	# default: True
 
 	def train(self, labels, features):
 		self.network.train()
@@ -140,7 +149,6 @@ class MyDNNTrain(object):
 def main():
 	rospy.init_node('fake_robot', anonymous=True)
 	fake_robot = FakeRobot();
-	print "Finished training fake_robot"
 	print "Fake robot now spinning"
 	rospy.spin()
 
