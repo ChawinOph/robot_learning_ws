@@ -94,9 +94,9 @@ class FakeRobot(object):
 class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
-		self.fc1 = nn.Linear(input_dim, 32)
-		self.fc2 = nn.Linear(32, 32) # hidden layer
-		self.fc3 = nn.Linear(32, output_dim)
+		self.fc1 = nn.Linear(input_dim, 64)
+		self.fc2 = nn.Linear(64, 64) # hidden layer
+		self.fc3 = nn.Linear(64, output_dim)
 
 	def forward(self, x):
 		x = F.relu(self.fc1(x))
@@ -131,8 +131,8 @@ class MyDNNTrain(object):
 		self.learning_rate = .01 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 100	# default: 500
-		self.batchsize = 50 	# default: 100
+		self.num_epochs = 500	# default: 500
+		self.batchsize = 25 	# default: 100
 		self.shuffle = True 	# default: True
 
 	def train(self, labels, features):
