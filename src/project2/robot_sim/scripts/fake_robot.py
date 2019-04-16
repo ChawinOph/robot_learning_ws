@@ -27,7 +27,7 @@ class FakeRobot(object):
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
 		# publisher for gui
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-		self.num_tests = 50			# default: 21
+		self.num_tests = 50		# default: 21
 		self.perturb_steps = 200    # default: 200
 		print "Collecting data from real_robot..."
 		self.features = [];
@@ -36,7 +36,6 @@ class FakeRobot(object):
 		self.obtain_data()
 		self.elapsed_collecting_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
 		print "Finished collecting data"
-		print "collection time: " + self.elapsed_collecting_time
 		print "Training the network..."
 		start_time = time.time()
 		self.network = MyDNN(self.features.shape[1], self.labels.shape[1])
@@ -44,7 +43,6 @@ class FakeRobot(object):
 		self.trainer.train(self.labels, self.features)
 		self.elapsed_training_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
 		print "Finished training fake_robot"
-		# print "NN training time: " + self.elapsed_training_time
 		# create fake robot service
 		self.fake_robot_service = rospy.Service('fake_robot', RobotAction, self.fake_robot_action)
 		self.resp_fake = RobotActionResponse()
@@ -133,8 +131,8 @@ class MyDNNTrain(object):
 		self.learning_rate = .01 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 100 	# default: 500
-		self.batchsize = 25 	# default: 100
+		self.num_epochs = 100	# default: 500
+		self.batchsize = 50 	# default: 100
 		self.shuffle = True 	# default: True
 
 	def train(self, labels, features):
