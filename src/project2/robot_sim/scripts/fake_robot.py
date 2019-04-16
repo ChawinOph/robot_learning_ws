@@ -94,7 +94,7 @@ class FakeRobot(object):
 class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
-		hl1_n_nodes = 64 
+		hl1_n_nodes = 32 
 		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
 		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
 		self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
