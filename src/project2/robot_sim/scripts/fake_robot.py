@@ -27,7 +27,7 @@ class FakeRobot(object):
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
 		# publisher for gui
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-		self.num_tests = 50		# default: 21
+		self.num_tests = 100		# default: 21
 		self.perturb_steps = 200    # default: 200
 		print "Collecting data from real_robot..."
 		self.features = [];
@@ -94,30 +94,31 @@ class FakeRobot(object):
 class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
-		hl1_n_nodes = 32 
-		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
-		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
-		self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
+
+		# hl1_n_nodes = 32
+		# self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
+		# self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
+		# self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
 
 		# 2 hidden layers
-		# hl1_n_nodes = 32 
-		# hl2_n_nodes = 32 
-		# self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
-		# self.fc2 = nn.Linear(hl1_n_nodes, hl2_n_nodes) # hidden layer 1
-		# self.fc3 = nn.Linear(hl2_n_nodes, hl2_n_nodes) # hidden layer 2
-		# self.fc4 = nn.Linear(hl2_n_nodes, output_dim)
+		hl1_n_nodes = 32 
+		hl2_n_nodes = 32 
+		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
+		self.fc2 = nn.Linear(hl1_n_nodes, hl2_n_nodes) # hidden layer 1
+		self.fc3 = nn.Linear(hl2_n_nodes, hl2_n_nodes) # hidden layer 2
+		self.fc4 = nn.Linear(hl2_n_nodes, output_dim)
 
 	def forward(self, x):
 		# 1 hidden layer
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = self.fc3(x)
-
-		# 2 hidden layers
 		# x = F.relu(self.fc1(x))
 		# x = F.relu(self.fc2(x))
-		# x = F.relu(self.fc3(x))
-		# x = self.fc4(x)
+		# x = self.fc3(x)
+
+		# 2 hidden layers
+		x = F.relu(self.fc1(x))
+		x = F.relu(self.fc2(x))
+		x = F.relu(self.fc3(x))
+		x = self.fc4(x)
 
 		return x
 
@@ -148,9 +149,9 @@ class MyDNNTrain(object):
 		self.learning_rate = .01 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 200	# default: 500
-		self.batchsize = 25	# default: 100
-		self.shuffle = False 	# default: True
+		self.num_epochs = 128	# default: 500
+		self.batchsize = 32	# default: 100
+		self.shuffle = True # default: True
 
 	def train(self, labels, features):
 		self.network.train()
