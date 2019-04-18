@@ -36,9 +36,14 @@ class FakeRobot(object):
 		self.obtain_data()
 		self.elapsed_collecting_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
 		print "Finished collecting data"
+		print "features"
+		print self.features
+		print "labels"
+		print self.labels
 		print "Training the network..."
 		start_time = time.time()
 		self.network = MyDNN(self.features.shape[1], self.labels.shape[1])
+		print self.network
 		self.trainer = MyDNNTrain(self.network)
 		self.trainer.train(self.labels, self.features)
 		self.elapsed_training_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
@@ -97,16 +102,37 @@ class MyDNN(nn.Module):
 
 		# hl1_n_nodes = 32
 		# self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
+		# self.drop1 = nn.Dropout(p=0.25)
 		# self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
+		# self.drop2 = nn.Dropout(p=0.25)
 		# self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
 
 		# 2 hidden layers
-		hl1_n_nodes = 32 
-		hl2_n_nodes = 32 
+		hl1_n_nodes = 16 
+		hl2_n_nodes = 16
+		# drop_out_rate = 0.1
 		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
+		# self.drop1 = nn.Dropout(p=drop_out_rate)
 		self.fc2 = nn.Linear(hl1_n_nodes, hl2_n_nodes) # hidden layer 1
+		# self.drop2 = nn.Dropout(p=drop_out_rate)
 		self.fc3 = nn.Linear(hl2_n_nodes, hl2_n_nodes) # hidden layer 2
+		# self.drop3 = nn.Dropout(p=drop_out_rate)
 		self.fc4 = nn.Linear(hl2_n_nodes, output_dim)
+
+		# 3 hidden layers
+		# hl1_n_nodes = 16 
+		# hl2_n_nodes = 8 
+		# hl3_n_nodes = 16 
+		# self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
+		# self.drop1 = nn.Dropout(p=0.1)
+		# self.fc2 = nn.Linear(hl1_n_nodes, hl2_n_nodes) # hidden layer 1
+		# self.drop2 = nn.Dropout(p=0.1)
+		# self.fc3 = nn.Linear(hl2_n_nodes, hl3_n_nodes) # hidden layer 2
+		# self.drop3 = nn.Dropout(p=0.1)
+		# self.fc4 = nn.Linear(hl3_n_nodes, hl3_n_nodes) # hidden layer 3
+		# self.drop4 = nn.Dropout(p=0.1)
+		# self.fc5 = nn.Linear(hl3_n_nodes, output_dim)
+
 
 	def forward(self, x):
 		# 1 hidden layer
@@ -115,10 +141,17 @@ class MyDNN(nn.Module):
 		# x = self.fc3(x)
 
 		# 2 hidden layers
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = F.relu(self.fc3(x))
+		x = F.leaky_relu(self.fc1(x))
+		x = F.leaky_relu(self.fc2(x))
+		x = F.leaky_relu(self.fc3(x))
 		x = self.fc4(x)
+
+		# 3 hidden layers
+		# x = F.relu(self.fc1(x))
+		# x = F.relu(self.fc2(x))
+		# x = F.relu(self.fc3(x))
+		# x = F.relu(self.fc4(x))
+		# x = self.fc5(x)
 
 		return x
 
@@ -149,9 +182,11 @@ class MyDNNTrain(object):
 		self.learning_rate = .01 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 128	# default: 500
-		self.batchsize = 32	# default: 100
+		self.num_epochs = 200	# default: 500
+		self.batchsize = 20	# default: 100
 		self.shuffle = True # default: True
+		self.current_loss = 1 # for tracking the loss
+		self.loss_threshold = 0.0025
 
 	def train(self, labels, features):
 		self.network.train()
@@ -159,6 +194,9 @@ class MyDNNTrain(object):
 		loader = DataLoader(dataset, shuffle=self.shuffle, batch_size = self.batchsize)
 		for epoch in range(self.num_epochs):
 			print 'epoch ', (epoch + 1)
+			if self.current_loss < self.loss_threshold:
+				print "Reached the loss threshold"
+				break
 			self.train_epoch(loader)
 
 	def train_epoch(self, loader):
@@ -172,7 +210,9 @@ class MyDNNTrain(object):
 			loss.backward()
 			total_loss += loss.item()
 			self.optimizer.step()
-		print 'loss ', total_loss/i
+		self.current_loss = total_loss/i
+		print 'loss ', self.current_loss
+
 
 def main():
 	rospy.init_node('fake_robot', anonymous=True)
