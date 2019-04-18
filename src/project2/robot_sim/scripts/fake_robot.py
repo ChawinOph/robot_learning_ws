@@ -27,7 +27,7 @@ class FakeRobot(object):
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
 		# publisher for gui
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-		self.num_tests = 5		# default: 21
+		self.num_tests = 150		# default: 21
 		self.perturb_steps = 200    # default: 200
 		print "Collecting data from real_robot..."
 		self.features = [];
@@ -36,9 +36,11 @@ class FakeRobot(object):
 		self.obtain_data()
 		self.elapsed_collecting_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
 		print "Finished collecting data"
-		print "features"
+		print "features shape: " 
+		print self.features.shape
 		print self.features
-		print "labels"
+		print "labels shape: " 
+		print self.labels.shape
 		print self.labels
 		print "Training the network..."
 		start_time = time.time()
@@ -56,20 +58,21 @@ class FakeRobot(object):
 
 	def obtain_data(self):
 		# create 3d mesh grid of all torque
-		tau_range = np.linspace(-1.0, 1.0, num=self.num_tests)
-		tau1v, tau2v, tau3v = np.meshgrid(tau_range, 0.5*tau_range, 0.25*tau_range, sparse=False, indexing='ij')
-		for i in range(self.num_tests):
-			for j in range(self.num_tests):
-				for k in range(self.num_tests):
-					print "i=%d j=%d k=%d" %(i,j,k)
-					action = np.array([tau1v[i, j, k], tau2v[i, j, k], tau3v[i, j, k]])
-					self.perturb(action)
-		# for i in range(0, self.num_tests):
-		# 	action = np.random.rand(1,3)
-		# 	action[0,0] = (2 * action[0,0] - 1.0) * 1.0
-		# 	action[0,1] = (2 * action[0,1] - 1.0) * 0.5
-		# 	action[0,2] = (2 * action[0,2] - 1.0) * 0.25
-		# 	self.perturb(action.reshape(3))
+		# tau_range = np.linspace(-1.0, 1.0, num=self.num_tests)
+		# tau1v, tau2v, tau3v = np.meshgrid(tau_range, 0.5*tau_range, 0.25*tau_range, sparse=False, indexing='ij')
+		# for i in range(self.num_tests):
+		# 	for j in range(self.num_tests):
+		# 		for k in range(self.num_tests):
+		# 			print "i=%d j=%d k=%d" %(i,j,k)
+		# 			action = np.array([tau1v[i, j, k], tau2v[i, j, k], tau3v[i, j, k]])
+		# 			self.perturb(action)
+
+		for i in range(0, self.num_tests):
+			action = np.random.rand(1,3)
+			action[0,0] = (2 * action[0,0] - 1.0) * 1.0
+			action[0,1] = (2 * action[0,1] - 1.0) * 0.5
+			action[0,2] = (2 * action[0,2] - 1.0) * 0.25
+			self.perturb(action.reshape(3))
 		# convert lists to numpy arrays
 		self.features = np.array(self.features)
 		self.labels = np.array(self.labels)
@@ -77,18 +80,26 @@ class FakeRobot(object):
 	def perturb(self, action):
 		req_real = RobotActionRequest()
 		req_real.reset = True
-		# reset robot config
+		# send request to reset real_robot config
 		resp_real = self.real_robot_action(req_real)
-		# apply constant action
+		collect_interval = 10 # how many steps we skip
+		# apply a constant action
 		for j in range(self.perturb_steps):
+			# create a new request
 			req_real = RobotActionRequest()
 			req_real.reset = False
 			req_real.action = action
-			self.features.append(np.append(resp_real.robot_state, req_real.action).tolist())
+			is_collected = j % collect_interval == 0
+			if is_collected:
+				# collect feature
+				self.features.append(np.append(resp_real.robot_state, req_real.action).tolist())
+			# send request to move real_robot
 			resp_real = self.real_robot_action(req_real)
-			self.labels.append(resp_real.robot_state)
-			# visualizing the perturbed real_robot in gui
-			self.viz_robot('real_robot', resp_real.robot_state)
+			if is_collected:
+				# collect label
+				self.labels.append(resp_real.robot_state)
+				# visualizing the perturbed real_robot in gui
+				self.viz_robot('real_robot', resp_real.robot_state)
 			# time.sleep(0.04) 
 
 	def viz_robot(self, robot_name, robot_state):
@@ -109,7 +120,7 @@ class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
 
-		hl1_n_nodes = 16
+		hl1_n_nodes = 64
 		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
 		# self.drop1 = nn.Dropout(p=0.5)
 		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
@@ -145,8 +156,8 @@ class MyDNN(nn.Module):
 
 	def forward(self, x):
 		# 1 hidden layer
-		x = F.leaky_relu(self.fc1(x))
-		x = F.leaky_relu(self.fc2(x))
+		x = F.relu(self.fc1(x))
+		x = F.relu(self.fc2(x))
 		x = self.fc3(x)
 
 		# 2 hidden layers
@@ -188,14 +199,14 @@ class MyDataset(Dataset):
 class MyDNNTrain(object):
 	def __init__(self, network): #Networks is of datatype MyDNN
 		self.network = network
-		self.learning_rate = 0.005 # default: 0.01
+		self.learning_rate = 0.01 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
 		self.num_epochs = 100	# default: 500
-		self.batchsize = 20	# default: 100
+		self.batchsize = 25	# default: 100
 		self.shuffle = True # default: True
-		self.current_loss_change = 1 # for tracking the loss
-		self.current_loss = 1
+		self.current_loss_change = 1 # for tracking the loss changes between epochs
+		self.current_loss = 1		 # for tracking the current loss
 		self.loss_change_threshold = 0.0001
 
 	def train(self, labels, features):
