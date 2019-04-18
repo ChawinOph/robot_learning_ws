@@ -199,7 +199,7 @@ class MyDataset(Dataset):
 class MyDNNTrain(object):
 	def __init__(self, network): #Networks is of datatype MyDNN
 		self.network = network
-		self.learning_rate = 0.01 # default: 0.01
+		self.learning_rate = 0.0001 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
 		self.num_epochs = 200	# default: 500
