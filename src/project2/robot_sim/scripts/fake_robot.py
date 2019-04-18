@@ -27,7 +27,7 @@ class FakeRobot(object):
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
 		# publisher for gui
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-		self.num_tests = 150		# default: 21
+		self.num_tests = 1000		# default: 21
 		self.perturb_steps = 200    # default: 200
 		print "Collecting data from real_robot..."
 		self.features = [];
@@ -82,7 +82,7 @@ class FakeRobot(object):
 		req_real.reset = True
 		# send request to reset real_robot config
 		resp_real = self.real_robot_action(req_real)
-		collect_interval = 10 # how many steps we skip
+		collect_interval = 5 # how many steps we skip
 		# apply a constant action
 		for j in range(self.perturb_steps):
 			# create a new request
@@ -120,7 +120,7 @@ class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
 
-		hl1_n_nodes = 64
+		hl1_n_nodes = 128
 		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
 		# self.drop1 = nn.Dropout(p=0.5)
 		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
@@ -202,8 +202,8 @@ class MyDNNTrain(object):
 		self.learning_rate = 0.01 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 100	# default: 500
-		self.batchsize = 25	# default: 100
+		self.num_epochs = 200	# default: 500
+		self.batchsize = 100	# default: 100
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
 		self.current_loss = 1		 # for tracking the current loss
