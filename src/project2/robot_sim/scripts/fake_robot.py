@@ -46,15 +46,16 @@ class FakeRobot(object):
 		start_time = time.time()
 		self.network = MyDNN(self.features.shape[1], self.labels.shape[1])
 		print self.network
-		self.trainer = MyDNNTrain(self.network)
-		self.trainer.train(self.labels, self.features)
-		self.elapsed_training_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
-		print "Finished training fake_robot"
 		# create fake robot service
 		self.fake_robot_service = rospy.Service('fake_robot', RobotAction, self.fake_robot_action)
 		self.resp_fake = RobotActionResponse()
 		# reset the robot_state in response
 		self.resp_fake.robot_state = self.features[0, :6].tolist
+		# train the network
+		self.trainer = MyDNNTrain(self.network)
+		self.trainer.train(self.labels, self.features)
+		self.elapsed_training_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
+		print "Finished training fake_robot"
 
 	def obtain_data(self):
 		# create 3d mesh grid of all torque
@@ -82,7 +83,7 @@ class FakeRobot(object):
 		req_real.reset = True
 		# send request to reset real_robot config
 		resp_real = self.real_robot_action(req_real)
-		collect_interval = 4 # how many steps we skip
+		collect_interval = 1 # how many steps we skip
 		# apply a constant action
 		for j in range(self.perturb_steps):
 			# create a new request
@@ -120,24 +121,25 @@ class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
 
-		# hl1_n_nodes = 36
-		# self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
-		# # self.drop1 = nn.Dropout(p=0.5)
-		# self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
-		# # self.drop2 = nn.Dropout(p=0.5)
-		# self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
+
+		hl1_n_nodes = 15
+		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
+		# self.drop1 = nn.Dropout(p=0.5)
+		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
+		self.drop2 = nn.Dropout(p=0.1)
+		self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
 
 		# 2 hidden layers
-		hl1_n_nodes = 15
-		hl2_n_nodes = 15
-		drop_out_rate = 0.2
-		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
-		# self.drop1 = nn.Dropout(p=drop_out_rate)
-		self.fc2 = nn.Linear(hl1_n_nodes, hl2_n_nodes) # hidden layer 1
-		self.drop2 = nn.Dropout(p=drop_out_rate)
-		self.fc3 = nn.Linear(hl2_n_nodes, hl2_n_nodes) # hidden layer 2
-		# self.drop3 = nn.Dropout(p=drop_out_rate)
-		self.fc4 = nn.Linear(hl2_n_nodes, output_dim)
+		# hl1_n_nodes = 15 
+		# hl2_n_nodes = 15
+		# drop_out_rate = 0.2
+		# self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
+		# # self.drop1 = nn.Dropout(p=drop_out_rate)
+		# self.fc2 = nn.Linear(hl1_n_nodes, hl2_n_nodes) # hidden layer 1
+		# # self.drop2 = nn.Dropout(p=drop_out_rate)
+		# self.fc3 = nn.Linear(hl2_n_nodes, hl2_n_nodes) # hidden layer 2
+		# # self.drop3 = nn.Dropout(p=drop_out_rate)
+		# self.fc4 = nn.Linear(hl2_n_nodes, output_dim)
 
 		# 3 hidden layers
 		# hl1_n_nodes = 16 
@@ -161,10 +163,10 @@ class MyDNN(nn.Module):
 		# x = self.fc3(x)
 
 		# 2 hidden layers
-		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
-		x = F.relu(self.fc3(x))
-		x = self.fc4(x)
+		# x = F.relu(self.fc1(x))
+		# x = F.relu(self.fc2(x))
+		# x = F.relu(self.fc3(x))
+		# x = self.fc4(x)
 
 		# 3 hidden layers
 		# x = F.relu(self.fc1(x))
@@ -203,11 +205,12 @@ class MyDNNTrain(object):
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
 		self.num_epochs = 100	# default: 500
-		self.batchsize = 20	# default: 100
+		self.batchsize = 20		# default: 100
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
 		self.current_loss = 1		 # for tracking the current loss
-		self.loss_change_threshold = 0.0001
+		self.loss_threshold = 0.0025
+		self.loss_change_threshold = 0.00001
 
 	def train(self, labels, features):
 		self.network.train()
@@ -215,9 +218,9 @@ class MyDNNTrain(object):
 		loader = DataLoader(dataset, shuffle=self.shuffle, batch_size = self.batchsize)
 		for epoch in range(self.num_epochs):
 			print 'epoch ', (epoch + 1)
-			# if self.current_loss_change < self.loss_change_threshold:
-			# 	print "Reached the loss threshold"
-			# 	break
+			if self.current_loss < self.loss_threshold or self.current_loss_change < self.loss_change_threshold:
+				print "Reached the loss threshold"
+				break
 			self.train_epoch(loader)
 
 	def train_epoch(self, loader):
