@@ -216,7 +216,7 @@ class MyDNNTrain(object):
 		loader = DataLoader(dataset, shuffle=self.shuffle, batch_size = self.batchsize)
 		for epoch in range(self.num_epochs):
 			print 'epoch ', (epoch + 1)
-			if self.current_loss < self.loss_threshold or self.current_loss_change < self.loss_change_threshold:
+			if self.current_loss_change < self.loss_change_threshold:
 				print "Reached the loss threshold"
 				break
 			self.train_epoch(loader)
