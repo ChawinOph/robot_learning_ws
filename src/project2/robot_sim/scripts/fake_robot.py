@@ -27,7 +27,7 @@ class FakeRobot(object):
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
 		# publisher for gui
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-		self.num_tests = 1000		# default: 21
+		self.num_tests = 1500		# default: 21
 		self.perturb_steps = 200    # default: 200
 		print "Collecting data from real_robot..."
 		self.features = [];
@@ -121,11 +121,11 @@ class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
 
-		hl1_n_nodes = 15
+		hl1_n_nodes = 12
 		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
 		# self.drop1 = nn.Dropout(p=0.5)
 		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
-		self.drop2 = nn.Dropout(p=0.1)
+		self.drop2 = nn.Dropout(p=0.5)
 		self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
 
 		# 2 hidden layers
@@ -153,7 +153,6 @@ class MyDNN(nn.Module):
 		# self.fc4 = nn.Linear(hl3_n_nodes, hl3_n_nodes) # hidden layer 3
 		# self.drop4 = nn.Dropout(p=0.1)
 		# self.fc5 = nn.Linear(hl3_n_nodes, output_dim)
-
 
 	def forward(self, x):
 		# 1 hidden layer
@@ -200,16 +199,16 @@ class MyDataset(Dataset):
 class MyDNNTrain(object):
 	def __init__(self, network): #Networks is of datatype MyDNN
 		self.network = network
-		self.learning_rate = 0.001 # default: 0.01
+		self.learning_rate = 0.005 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 100	# default: 500
-		self.batchsize = 20		# default: 100
+		self.num_epochs = 35	# default: 500
+		self.batchsize = 30		# default: 100
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
 		self.current_loss = 1		 # for tracking the current loss
 		self.loss_threshold = 0.0025
-		self.loss_change_threshold = 0.00001
+		self.loss_change_threshold = 0.0001
 
 	def train(self, labels, features):
 		self.network.train()
