@@ -202,7 +202,7 @@ class MyDNNTrain(object):
 		self.learning_rate = 0.005 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 35	# default: 500
+		self.num_epochs = 40	# default: 500
 		self.batchsize = 30		# default: 100
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
