@@ -27,7 +27,7 @@ class FakeRobot(object):
 		self.real_robot_action = rospy.ServiceProxy('real_robot', RobotAction)
 		# publisher for gui
 		self.pub = rospy.Publisher("/robot_states", RobotState, queue_size=100)
-		self.num_tests = 800		# default: 21
+		self.num_tests = 1500		# default: 21
 		self.perturb_steps = 200    # default: 200
 		print "Collecting data from real_robot..."
 		self.features = [];
@@ -100,7 +100,7 @@ class FakeRobot(object):
 				# collect label
 				self.labels.append(resp_real.robot_state)
 				# visualizing the perturbed real_robot in gui
-				# self.viz_robot('real_robot', resp_real.robot_state)
+				self.viz_robot('real_robot', resp_real.robot_state)
 			# time.sleep(0.04) 
 
 	def viz_robot(self, robot_name, robot_state):
@@ -121,12 +121,11 @@ class MyDNN(nn.Module):
 	def __init__(self, input_dim, output_dim):
 		super(MyDNN, self).__init__()
 
-
-		hl1_n_nodes = 15
+		hl1_n_nodes = 12
 		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
 		# self.drop1 = nn.Dropout(p=0.5)
 		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
-		self.drop2 = nn.Dropout(p=0.1)
+		self.drop2 = nn.Dropout(p=0.5)
 		self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
 
 		# 2 hidden layers
@@ -158,9 +157,9 @@ class MyDNN(nn.Module):
 
 	def forward(self, x):
 		# 1 hidden layer
-		# x = F.relu(self.fc1(x))
-		# x = F.relu(self.fc2(x))
-		# x = self.fc3(x)
+		x = F.relu(self.fc1(x))
+		x = F.relu(self.fc2(x))
+		x = self.fc3(x)
 
 		# 2 hidden layers
 		# x = F.relu(self.fc1(x))
@@ -201,16 +200,16 @@ class MyDataset(Dataset):
 class MyDNNTrain(object):
 	def __init__(self, network): #Networks is of datatype MyDNN
 		self.network = network
-		self.learning_rate = 0.001 # default: 0.01
+		self.learning_rate = 0.005 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 100	# default: 500
-		self.batchsize = 20		# default: 100
+		self.num_epochs = 40	# default: 500
+		self.batchsize = 30		# default: 100
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
 		self.current_loss = 1		 # for tracking the current loss
 		self.loss_threshold = 0.0025
-		self.loss_change_threshold = 0.00001
+		self.loss_change_threshold = 0.0001
 
 	def train(self, labels, features):
 		self.network.train()
@@ -218,7 +217,7 @@ class MyDNNTrain(object):
 		loader = DataLoader(dataset, shuffle=self.shuffle, batch_size = self.batchsize)
 		for epoch in range(self.num_epochs):
 			print 'epoch ', (epoch + 1)
-			if self.current_loss < self.loss_threshold or self.current_loss_change < self.loss_change_threshold:
+			if self.current_loss_change < self.loss_change_threshold:
 				print "Reached the loss threshold"
 				break
 			self.train_epoch(loader)
