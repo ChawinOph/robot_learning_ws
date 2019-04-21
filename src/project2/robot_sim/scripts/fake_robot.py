@@ -100,7 +100,7 @@ class FakeRobot(object):
 				# collect label
 				self.labels.append(resp_real.robot_state)
 				# visualizing the perturbed real_robot in gui
-				self.viz_robot('real_robot', resp_real.robot_state)
+				# self.viz_robot('real_robot', resp_real.robot_state)
 			# time.sleep(0.04) 
 
 	def viz_robot(self, robot_name, robot_state):
@@ -208,7 +208,7 @@ class MyDNNTrain(object):
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
 		self.current_loss = 1		 # for tracking the current loss
-		self.loss_threshold = 0.003
+		self.loss_threshold = 0.00325
 		self.loss_change_threshold = 0.00005
 
 	def train(self, labels, features):
