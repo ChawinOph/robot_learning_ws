@@ -208,7 +208,7 @@ class MyDNNTrain(object):
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
 		self.current_loss = 1		 # for tracking the current loss
-		self.loss_threshold = 0.00275
+		self.loss_threshold = 0.003
 		self.loss_change_threshold = 0.00005
 
 	def train(self, labels, features):
