@@ -58,7 +58,7 @@ class FakeRobot(object):
 		print "Finished training fake_robot"
 
 	def obtain_data(self):
-		# create 3d mesh grid of all torque
+		# # create 3d mesh grid of all torque
 		# tau_range = np.linspace(-1.0, 1.0, num=self.num_tests)
 		# tau1v, tau2v, tau3v = np.meshgrid(tau_range, 0.5*tau_range, 0.25*tau_range, sparse=False, indexing='ij')
 		# for i in range(self.num_tests):
@@ -125,7 +125,7 @@ class MyDNN(nn.Module):
 		self.fc1 = nn.Linear(input_dim, hl1_n_nodes)
 		# self.drop1 = nn.Dropout(p=0.5)
 		self.fc2 = nn.Linear(hl1_n_nodes, hl1_n_nodes) # hidden layer 1
-		self.drop2 = nn.Dropout(p=0.5)
+		self.drop2 = nn.Dropout(p=0.25)
 		self.fc3 = nn.Linear(hl1_n_nodes, output_dim)
 
 		# 2 hidden layers
@@ -201,14 +201,15 @@ class MyDNNTrain(object):
 		self.network = network
 		self.learning_rate = 0.005 # default: 0.01
 		self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) # default: torch.optim.SGD(self.network.parameters(), lr=self.learning_rate)
+		# self.optimizer = torch.optim.Adam(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 		self.criterion = nn.MSELoss() # default: nn.MSELoss()
-		self.num_epochs = 40	# default: 500
+		self.num_epochs = 45	# default: 500
 		self.batchsize = 30		# default: 100
 		self.shuffle = True # default: True
 		self.current_loss_change = 1 # for tracking the loss changes between epochs
 		self.current_loss = 1		 # for tracking the current loss
-		self.loss_threshold = 0.0025
-		self.loss_change_threshold = 0.0001
+		self.loss_threshold = 0.00275
+		self.loss_change_threshold = 0.00005
 
 	def train(self, labels, features):
 		self.network.train()
@@ -216,7 +217,19 @@ class MyDNNTrain(object):
 		loader = DataLoader(dataset, shuffle=self.shuffle, batch_size = self.batchsize)
 		for epoch in range(self.num_epochs):
 			print 'epoch ', (epoch + 1)
-			if self.current_loss_change < self.loss_change_threshold:
+			# adaptive learning rate
+			# if self.current_loss_change > 0.0001:
+			# 	self.learning_rate = 0.005 
+			# else:
+			# 	self.learning_rate = 0.005/2.0
+			# 	self.loss_change_threshold = 0.00001
+			# elif self.current_loss_change > 0.00005:
+			# 	self.learning_rate = 0.005/4.0 
+			# else:
+			# 	self.learning_rate = 0.005/8.0 
+			# print "current learning rate: %f" %self.learning_rate
+			# self.optimizer = torch.optim.SGD(self.network.parameters(), lr=self.learning_rate) 
+			if self.current_loss < self.loss_threshold or self.current_loss_change < self.loss_change_threshold:
 				print "Reached the loss threshold"
 				break
 			self.train_epoch(loader)
